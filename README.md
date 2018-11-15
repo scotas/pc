@@ -34,3 +34,12 @@ Note that this Docker container is linked to an out-of-box Solr instance, start 
 ```
 $ docker run --name solr -d -p 8983:8983 -t solr 
 ```
+## Built binary distribution from sources
+An easy way to build a binary distribution from these sources is to start a linkded Docker container to running instance of Oracle 18c XE Database, for example
+```
+$ cd pc
+$ docker run -ti --rm --name dev-pc-18c --hostname dev --link pc:ols \
+    -v $PWD:/home/ols/pc \
+    ols-dev:2.0.4
+```
+where **pc** is container running an Oracle 18c XE database.
