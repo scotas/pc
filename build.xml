@@ -12,9 +12,9 @@
   <property name="base-version" value="1.0-SNAPSHOT"/>
   <property name="pc-version" value="2.0"/>
   <property name="version" value="${pc-version}.0"/>
-  <property name="base-dir" value="../lucene"/>
+  <property name="base-dir" value=".."/>
   <property name="solr-dir" value=".."/>
-  <property name="build-dir" value="${base-dir}/build"/>
+  <property name="build-dir" value="${base-dir}/pc"/>
   <property name="contrib-dir" value="${build-dir}/contrib"/>
   <property name="tmp-dir" value="${build-dir}/tmp"/>
   <property name="package-dir" value="${tmp-dir}/pc"/>
