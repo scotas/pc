@@ -356,7 +356,7 @@ $ curl -X POST -H 'Content-type:application/json' --data-binary '{
   }
 }' http://localhost:8983/solr/tutorial/schema
 
-$ docker exec -u solr solr sed -i 's/<uniqueKey>id/<uniqueKey>rowid/g' /opt/solr/server/solr/tutorial/conf/managed-schema
+$ sed -i 's/<uniqueKey>id/<uniqueKey>rowid/g' /opt/solr/server/solr/tutorial/conf/managed-schema
 $ curl "http://localhost:8983/solr/admin/cores?action=RELOAD&core=tutorial"
 
 -- Tutorial custom

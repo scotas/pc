@@ -988,7 +988,7 @@ create or replace TYPE BODY SolrPushConnector IS
         ELSE
           TBLS := TBLS || ' where L$MT.rowid='''||inserted(1)||'''';
         END IF;
-        SELECT_STMT := 'select json_object('||ALL_COLS||' returning CLOB) L$MT$R from '||TBLS;
+        SELECT_STMT := 'select json_object('||ALL_COLS||' ABSENT ON NULL returning CLOB) L$MT$R from '||TBLS;
         full_collect_stmt :=
 'DECLARE
   DOC    JSON_OBJECT_T;
@@ -1032,7 +1032,7 @@ end;';
         ELSE
           TBLS := TBLS || ' where L$MT.rowid=C.rid';
         END IF;
-        SELECT_STMT := 'select json_object('||ALL_COLS||' returning CLOB) L$MT$R from '||TBLS;
+        SELECT_STMT := 'select json_object('||ALL_COLS||' ABSENT ON NULL returning CLOB) L$MT$R from '||TBLS;
         FULL_COLLECT_STMT :=
 'DECLARE
   RIDS   SYS.ODCIRIDLIST;
@@ -1205,7 +1205,7 @@ end;';
       IF (INCLUDE_MC = 'true') THEN
         ALL_COLS := ALL_COLS||','''||M_COLUMN||''' value L$MT.'||M_COLUMN;
       END IF;
-      SELECT_STMT := 'select json_object('||ALL_COLS||' returning CLOB) L$MT$R from '||TBLS;
+      SELECT_STMT := 'select json_object('||ALL_COLS||' ABSENT ON NULL returning CLOB) L$MT$R from '||TBLS;
       --DBMS_OUTPUT.PUT_LINE('SELECT_STMT: '||SELECT_STMT);
       FULL_STMT :=
 'DECLARE
