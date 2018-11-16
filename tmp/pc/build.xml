@@ -1,0 +1,271 @@
+<?xml version="1.0"?>
+<project name="pc" default="install-pc">
+
+  <property name="version" value="2.0.0"/>
+  <property name="junit.jar" value="junit-4.7.jar"/>
+  <property name="env" environment="env" value="env"/>
+  <property name="ORACLE_HOME" value="${env.ORACLE_HOME}"/>
+  <property name="tmp-dir" value="tmp"/>
+  <!-- for test suites override using -D java flag-->
+  <property name="db.usr" value="PC"/>
+  <property name="db.pwd" value="PC"/>
+  <property name="SQLPlus" value="sqlplus"/>
+
+  <property file="${user.home}/build.properties"/>
+  <import file="loadjava.xml"/>
+  <import file="ncomp.xml"/>
+
+  <description>
+	  Solr Push Connector
+  </description>
+
+  <path id="xercesImpl.jar">
+    <pathelement location="lib/xercesImpl-2.9.1.jar" />
+  </path>
+
+  <path id="jdom.jar">
+	  <pathelement location="lib/jdom-1.0.jar" />
+  </path>
+  
+  <path id="jdom.jar">
+	  <pathelement location="lib/jdom-1.0.jar" />
+  </path>
+  
+  <path id="junit.jar">
+    <pathelement location="lib/${junit.jar}" />
+  </path>
+
+  <path id="log4j.jar">
+    <pathelement location="lib/log4j-1.2.16.jar" />
+  </path>
+
+  <path id="ojdbc8.jar">
+	  <pathelement location="lib/ojdbc8.jar" />
+  </path>
+  
+  <taskdef name="sqlunit" classname="net.sourceforge.sqlunit.ant.SqlunitTask">
+     <classpath refid="log4j.jar"/>
+     <classpath refid="junit.jar"/>
+     <classpath refid="jdom.jar"/>
+     <classpath refid="xercesImpl.jar"/>
+     <classpath>
+        <fileset dir="${ORACLE_HOME}/jdbc/lib">
+           <include name="ojdbc8.jar" />
+        </fileset>
+     </classpath>
+     <classpath>
+        <fileset dir="bin">
+           <include name="sqlunit-5.0.jar" />
+        </fileset>
+     </classpath>
+  </taskdef>
+  
+  <target name="compile-test">
+	  <compile
+		  srcdir="src/test"
+		  destdir="${build.dir}/classes/test">
+		  <classpath refid="test.classpath"/>
+	  </compile>
+  </target>
+	  
+  <target name="jar-test" depends="compile-test">
+	  <jar
+	      destfile="${build.dir}/${final.name}-test.jar"
+	      basedir="${build.dir}/classes/test"
+	      excludes="**/*.java"
+	      />
+  </target>
+  
+  <target name="pc-test">
+    <echoproperties/>
+    <antcall target="test">
+      <reference refid="pc.test.path" torefid="classpath"/>
+    </antcall>
+  </target>
+  
+  <target name="create-user">
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db" failonerror="true">
+      <arg value="${dba.usr}/${dba.pwd}@${db.str} as sysdba"/>
+      <arg value="@create-user.plb"/>
+      <arg value="${db.usr}"/>
+    </exec>
+  </target>
+
+  <target name="grant-acls">
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db" failonerror="true">
+      <arg value="${dba.usr}/${dba.pwd}@${db.str} as sysdba"/>
+      <arg value="@grant-acls-solr.plb"/>
+      <arg value="${db.usr}"/>
+    </exec>
+  </target>
+
+  <target name="create-pc-role">
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db" failonerror="true">
+      <arg value="${dba.usr}/${dba.pwd}@${db.str} as sysdba"/>
+      <arg value="@create-pc-role.plb"/>
+    </exec>
+  </target>
+
+  <target name="grant-any-job" description="Give grant any job to lucene">
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${dba.usr}/${dba.pwd}@${db.str} as sysdba"/>
+      <arg value="@grant-any-job.plb"/>
+    </exec>
+  </target>
+
+  <target name="create-domain-index">
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@json_dyn.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@PushConnectorCommonTypes.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@PushConnectorCommonTypes-bdy.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@SolrPushConnector.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@PushConnectorAdm.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@PushConnectorAdm-bdy.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@SolrPushConnector-bdy.plb"/>
+    </exec>
+    <exec executable="${ORACLE_HOME}/bin/${SQLPlus}" dir="./db">
+      <arg value="${db.usr}/${db.pwd}@${db.str}"/>
+      <arg value="@SolrPushConnectorType.plb"/>
+    </exec>
+  </target>
+
+  <target name="test-pc-clob" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-clob.txt">
+      <fileset dir="db">
+	      <include name="testClob.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-dicc" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-dicc.txt">
+      <fileset dir="db">
+	      <include name="testDicc.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-emails" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-emails.txt">
+      <fileset dir="db">
+	      <include name="testEmails.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-iot" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-iot.txt">
+      <fileset dir="db">
+	      <include name="testIOT.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-master-detail" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-master-detail.txt">
+      <fileset dir="db">
+	      <include name="testMasterDetail.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-similarity" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-similarity.txt">
+      <fileset dir="db">
+	      <include name="testSimilarity.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-source-small" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-source-small.txt">
+      <fileset dir="db">
+	      <include name="testSourceSmall.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-term-vector" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-term-vector.txt">
+      <fileset dir="db">
+	      <include name="testTermVector.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="test-pc-xmltype" description="Run Test on Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-xmltype.txt">
+      <fileset dir="db">
+	      <include name="testXMLType.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+  
+  <target name="test-pc-tutorial" depends="init" description="Run Test on Solr Domain Index functionality">
+    <delete dir="${tmp-dir}"/>
+    <mkdir dir="${tmp-dir}"/>
+    <sqlunit haltOnFailure="false" debug="false" logformat="default"
+            logfile="tmp/sqlunit-test-tutorial.txt">
+      <fileset dir="db/tutorial">
+	      <include name="testTutorial.xml" />
+      </fileset>
+    </sqlunit>
+  </target>
+
+  <target name="install-pc"
+          description="Create an Oracle user to hold all the Push Connectors code and load it, also create a new domain index named LuceneDomain"
+          depends="create-user,create-pc-role,create-domain-index,grant-any-job,grant-acls">
+  </target>
+  
+ <target name="init">
+    <delete dir="${tmp-dir}"/>
+    <mkdir  dir="${tmp-dir}"/>
+</target>
+ 
+</project>

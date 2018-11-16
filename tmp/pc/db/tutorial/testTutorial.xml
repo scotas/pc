@@ -1,0 +1,583 @@
+<?xml version="1.0"?>
+<!DOCTYPE sqlunit SYSTEM "file:bin/sqlunit.dtd">
+<sqlunit>
+  <connection extern="db/sqlunit.properties" />
+  
+<!--
+You can index all of the sample data, using the following script
+Content included from files
+hd.xml
+ipod_other.xml
+ipod_video.xml
+mem.xml
+monitor.xml
+monitor2.xml
+mp500.xml
+sd500.xml
+solr.xml
+utf8-example.xml
+vidcard.xml
+-->
+  <setup>
+      <include file="db/tutorial/schemaTutorial.sql" />
+  </setup>
+<!-- 
+...and now you can search for all sorts of things using the default Solr Query Syntax (a superset of the Lucene query syntax)...
+-->
+<test name="search video" failure-message="Error with Simple SELECT">
+<prepare>
+  <!-- wait auto commit 5 sec -->
+  <sql><stmt>{call DBMS_LOCK.SLEEP(15)}</stmt></sql>
+</prepare>
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ id FROM OLS_TUTORIAL T where SCONTAINS(id,'video')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="search name:video" failure-message="Error with field Simple SELECT">
+<sql>
+  <stmt>SELECT id FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'name:video')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="search +video +price:[* TO 400]" failure-message="Error with range query">
+<sql>
+  <stmt>SELECT id,price FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'video AND price_f:[* TO 400]')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="PRICE" type="NUMERIC">399</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="search +video plus score" failure-message="Error with test round(SSCORE(1),2)">
+<sql>
+  <stmt>SELECT NAME,ID,round(SSCORE(1),2) FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'video',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="3">
+      <col id="1" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="2" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="3" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.73</col>
+    </row>
+    <row id="2">
+      <col id="1" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="2" name="ID" type="VARCHAR">100-435805</col>
+      <col id="3" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.75</col>
+    </row>
+    <row id="1">
+      <col id="1" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="2" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="3" name="ROUND(SSCORE(1),2)" type="NUMERIC">1</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="search 1 gigabyte matches things with GB" failure-message="Error searching for 1 gigabyte">
+<sql>
+    <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ round(SSCORE(1),2),NAME FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'"1GB"',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="3">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.9</col>
+      <col id="2" name="NAME" type="VARCHAR">CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.95</col>
+      <col id="2" name="NAME" type="VARCHAR">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</col>
+    </row>
+    <row id="1">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">1</col>
+      <col id="2" name="NAME" type="VARCHAR">A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<!-- Optimizer examples when doing domain index sort -->
+<test name="SQL Sort - Optimizer Cost 4" failure-message="Error with sql order by test">
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'video',1)>0 order by price desc</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+      <col id="2" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="3" name="PRICE" type="NUMERIC">649.99</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="2" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="3" name="PRICE" type="NUMERIC">479.95</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="3" name="PRICE" type="NUMERIC">399</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="-- Domain Index sort, Optimizer Cost 3" failure-message="Error with solr order by">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'video','price_f desc')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+      <col id="2" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="3" name="PRICE" type="NUMERIC">649.99</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="2" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="3" name="PRICE" type="NUMERIC">479.95</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="3" name="PRICE" type="NUMERIC">399</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<!-- Update section -->
+<test name="pre-update test" failure-message="Error with empty Simple SELECT">
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'name:"Server-mod"')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+  </resultset>
+</result>
+</test>
+
+<test name="update test" failure-message="Error with update test">
+<prepare>
+  <sql><stmt>UPDATE OLS_TUTORIAL SET id=id,NAME = 'Solr, the Enterprise Search Server-mod' WHERE ID='SOLR1000'</stmt></sql>
+  <sql><stmt>COMMIT</stmt></sql>
+  <!-- wait auto commit 5 sec -->
+  <sql><stmt>{call DBMS_LOCK.SLEEP(15)}</stmt></sql>
+</prepare>
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'name:"Server-mod"')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">SOLR1000</col>
+      <col id="2" name="NAME" type="VARCHAR">Solr, the Enterprise Search Server-mod</col>
+      <col id="3" name="PRICE" type="NUMERIC">0</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<!-- Delete section -->
+<test name="pre-delete by ID test" failure-message="Error with empty Simple SELECT">
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'name:SP2514N')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">SP2514N</col>
+      <col id="2" name="NAME" type="VARCHAR">Samsung SpinPoint P120 SP2514N - hard drive - 250 GB - ATA-133</col>
+      <col id="3" name="PRICE" type="NUMERIC">92</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="delete by ID test" failure-message="Error with empty Simple SELECT">
+<prepare>
+  <sql><stmt>DELETE FROM OLS_TUTORIAL WHERE ID='SP2514N'</stmt></sql>
+  <sql><stmt>COMMIT</stmt></sql>
+  <!-- delete are applied inmediately on connected session -->
+</prepare>
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'name:SP2514N')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+  </resultset>
+</result>
+</test>
+
+<test name="pre-delete by query test" failure-message="Error with empty Simple SELECT">
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'name:DDR')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">VS1GB400C3</col>
+      <col id="2" name="NAME" type="VARCHAR">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</col>
+      <col id="3" name="PRICE" type="NUMERIC">74.99</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">VDBDB1A16</col>
+      <col id="2" name="NAME" type="VARCHAR">A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM</col>
+      <col id="3" name="PRICE" type="NUMERIC">NULL</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">TWINX2048-3200PRO</col>
+      <col id="2" name="NAME" type="VARCHAR">CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail</col>
+      <col id="3" name="PRICE" type="NUMERIC">185</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="delete by Query test" failure-message="Error with empty Simple SELECT">
+<prepare>
+  <sql><stmt>DELETE FROM OLS_TUTORIAL WHERE SCONTAINS(id,'name:DDR')>0</stmt></sql>
+  <sql><stmt>COMMIT</stmt></sql>
+  <!-- delete are applied inmediately on connected session -->
+</prepare>
+<sql>
+  <stmt>SELECT ID,NAME,PRICE FROM OLS_TUTORIAL WHERE SCONTAINS(ID,'name:DDR')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+  </resultset>
+</result>
+</test>
+
+<!-- Sorting section -->
+<test name="Sort query example DESC" failure-message="Error with simple select">
+<prepare>
+  <!-- wait auto commit 5 sec -->
+  <sql><stmt>{call DBMS_LOCK.SLEEP(15)}</stmt></sql>
+</prepare>
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ ID,NAME,PRICE FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video','price_f desc')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+      <col id="2" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="3" name="PRICE" type="NUMERIC">649.99</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="2" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="3" name="PRICE" type="NUMERIC">479.95</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="3" name="PRICE" type="NUMERIC">399</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="Sort query example ASC" failure-message="Error with simple select">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ ID,NAME,PRICE FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video','price_f asc')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="3" name="PRICE" type="NUMERIC">399</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="2" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="3" name="PRICE" type="NUMERIC">479.95</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+      <col id="2" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="3" name="PRICE" type="NUMERIC">649.99</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="Sort query example multiple columns" failure-message="Error with simple select">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ ID,NAME,PRICE,INSTOCK FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video','inStock_b asc,price_f desc')>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+      <col id="2" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="3" name="PRICE" type="NUMERIC">649.99</col>
+      <col id="4" name="INSTOCK" type="CHAR">false</col>
+    </row>
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="2" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="3" name="PRICE" type="NUMERIC">479.95</col>
+      <col id="4" name="INSTOCK" type="CHAR">false</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="3" name="PRICE" type="NUMERIC">399</col>
+      <col id="4" name="INSTOCK" type="CHAR">true </col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="score desc natural sort for domain index" failure-message="Error with natural sort">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ round(SSCORE(1),2),ID,NAME FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="2">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.76</col>
+      <col id="2" name="ID" type="VARCHAR">100-435805</col>
+      <col id="3" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.73</col>
+      <col id="2" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="3" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+    </row>
+    <row id="1">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">1</col>
+      <col id="2" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="3" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="score can also be used as a field name when specifying a sort" failure-message="Error with specifying sort">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ round(SSCORE(1),2),ID,NAME,PRICE,INSTOCK FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video','inStock_b asc,score desc',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="2">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.73</col>
+      <col id="2" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="3" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+      <col id="4" name="PRICE" type="NUMERIC">479.95</col>
+      <col id="5" name="INSTOCK" type="CHAR">false</col>
+    </row>
+    <row id="1">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.76</col>
+      <col id="2" name="ID" type="VARCHAR">100-435805</col>
+      <col id="3" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+      <col id="4" name="PRICE" type="NUMERIC">649.99</col>
+      <col id="5" name="INSTOCK" type="CHAR">false</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ROUND(SSCORE(1),2)" type="NUMERIC">1</col>
+      <col id="2" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="3" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="4" name="PRICE" type="NUMERIC">399</col>
+      <col id="5" name="INSTOCK" type="CHAR">true </col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="Complex functions used to sort results - 1" failure-message="Error with sort using functions">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ POPULARITY/(PRICE+1) PP,NAME FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video','div(popularity_i,add(price_f,1)) desc',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="PP" type="NUMERIC">0.025</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+    </row>
+    <row id="2">
+      <col id="1" name="PP" type="NUMERIC">0.0145545274976608795093045015074332051149</col>
+      <col id="2" name="NAME" type="VARCHAR">ASUS Extreme N7800GTX/2DHTV (256 MB)</col>
+    </row>
+    <row id="3">
+      <col id="1" name="PP" type="NUMERIC">0.0107528533464415736032811563925713144595</col>
+      <col id="2" name="NAME" type="VARCHAR">ATI Radeon X1900 XTX 512 MB PCIE Video Card</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<!-- highlighting -->
+<test name="Highlight example" failure-message="Error with Highlight example">
+<sql>
+  <stmt>SELECT nvl(SHIGHLIGHT(1),name) hl,id FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'video card',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="2">
+      <col id="1" name="HL" type="VARCHAR">{"features":[" x16\nDual DVI connectors, HDTV out, &lt;em&gt;video&lt;/em&gt; input\nOpenGL 2.0, DirectX 9.0"]}</col>
+      <col id="2" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+    </row>
+    <row id="4">
+      <col id="1" name="HL" type="VARCHAR">{"features":["\nHi-Speed USB\nmemory &lt;em&gt;card&lt;/em&gt;: CompactFlash, Micro Drive, SmartMedia, Memory Stick, Memory Stick Pro, SD &lt;em&gt;Card&lt;/em&gt;"]}</col>
+      <col id="2" name="ID" type="VARCHAR">0579B002</col>
+    </row>
+    <row id="1">
+      <col id="1" name="HL" type="VARCHAR">{"name":["ATI Radeon X1900 XTX 512 MB PCIE &lt;em&gt;Video&lt;/em&gt; &lt;em&gt;Card&lt;/em&gt;"]}</col>
+      <col id="2" name="ID" type="VARCHAR">100-435805</col>
+    </row>
+    <row id="3">
+      <col id="1" name="HL" type="VARCHAR">{"name":["Apple 60 GB iPod with &lt;em&gt;Video&lt;/em&gt; Playback Black"],"features":["iTunes, Podcasts, Audiobooks\nStores up to 15,000 songs, 25,000 photos, or 150 hours of &lt;em&gt;video&lt;/em&gt;\n2.5"]}</col>
+      <col id="2" name="ID" type="VARCHAR">MA147LL/A</col>
+    </row>
+    <row id="5">
+      <col id="1" name="HL" type="VARCHAR">{}</col>
+      <col id="2" name="ID" type="VARCHAR">9885A004</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<!-- Faceted Search -->
+<test name="Facets field simple example" failure-message="Error with Facets fields simple">
+<call>
+  <stmt>{? = call SOLRPUSHCONNECTOR.facet('TUTORIAL_PIDX',null,'facet.field=cat').fields.to_string}</stmt>
+  <param id="1" name="fields-result" type="VARCHAR" inout="out"></param>
+</call>
+<result>
+  <outparam id="1" name="fields-result" type="VARCHAR">{"cat":["electronics",10,"card",2,"connector",2,"graphics",2,"monitor",2,"search",2,"software",2,"camera",1,"copier",1,"drive",1,"hard",1,"multifunction",1,"music",1,"printer",1,"scanner",1,"memory",0]}</outparam>
+</result>
+</test>
+
+<test name="Facets field multiple example" failure-message="Error with Facets fields multiple">
+<call>
+  <stmt>{? = call SOLRPUSHCONNECTOR.facet('TUTORIAL_PIDX',null,'facet.field=cat&amp;facet.field=inStock_b').fields.to_string}</stmt>
+  <param id="1" name="fields-result" type="VARCHAR" inout="out"></param>
+</call>
+<result>
+  <outparam id="1" name="fields-result" type="VARCHAR">{"cat":["electronics",10,"card",2,"connector",2,"graphics",2,"monitor",2,"search",2,"software",2,"camera",1,"copier",1,"drive",1,"hard",1,"multifunction",1,"music",1,"printer",1,"scanner",1,"memory",0],"inStock_b":["true",8,"false",4]}</outparam>
+</result>
+</test>
+
+<test name="Facets query example" failure-message="Error with Facets queries">
+<call>
+  <stmt>{? = call SOLRPUSHCONNECTOR.facet('TUTORIAL_PIDX',null,'facet.query=price_f:[0+TO+100]&amp;facet.query=price_f:[100+TO+*]').queries.to_string}</stmt>
+  <param id="1" name="fields-result" type="VARCHAR" inout="out"></param>
+</call>
+<result>
+  <outparam id="1" name="fields-result" type="VARCHAR">{"price_f:[0 TO 100]":4,"price_f:[100 TO *]":8}</outparam>
+</result>
+</test>
+
+<test name="Facets dates example" failure-message="Error with Facets ranges">
+<call>
+  <stmt>{? = call SOLRPUSHCONNECTOR.facet('TUTORIAL_PIDX',null,'facet.range=manufacturedate_dt&amp;facet.range.start=2004-01-01T00:00:00Z&amp;facet.range.end=2010-01-01T00:00:00Z&amp;facet.range.gap=%2B1YEAR').ranges.to_string}</stmt>
+  <param id="1" name="fields-result" type="VARCHAR" inout="out"></param>
+</call>
+<result>
+  <outparam id="1" name="fields-result" type="VARCHAR">{"manufacturedate_dt":{"counts":["2004-01-01T00:00:00Z",0,"2005-01-01T00:00:00Z",2,"2006-01-01T00:00:00Z",6,"2007-01-01T00:00:00Z",0,"2008-01-01T00:00:00Z",0,"2009-01-01T00:00:00Z",0],"gap":"+1YEAR","start":"2004-01-01T00:00:00Z","end":"2010-01-01T00:00:00Z"}}</outparam>
+</result>
+</test>
+
+<test name="Facets dates example" failure-message="Error with Facets interval">
+<call>
+  <stmt>{? = call SOLRPUSHCONNECTOR.facet('TUTORIAL_PIDX',null,'facet.interval=price_f&amp;f.price_f.facet.interval.set=[0,10]&amp;f.price_f.facet.interval.set=(10,100]').intervals.to_string}</stmt>
+  <param id="1" name="fields-result" type="VARCHAR" inout="out"></param>
+</call>
+<result>
+  <outparam id="1" name="fields-result" type="VARCHAR">{"price_f":{"[0,10]":2,"(10,100]":2}}</outparam>
+</result>
+</test>
+
+<!-- Text analysis -->
+<test name="search features:recharging matches Rechargeable due to stemming with the EnglishPorterFilter" failure-message="Error with Simple SELECT">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ SSCORE(1),NAME,features FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'features:recharging',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="SSCORE(1)" type="NUMERIC">1</col>
+      <col id="2" name="NAME" type="VARCHAR">Apple 60 GB iPod with Video Playback Black</col>
+      <col id="3" name="FEATURES" type="CLOB">md5:f359f394d7156ef914574d413992dbf2</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="search misspelled pixima matches Pixma due to use of a SynonymFilter" failure-message="Error with Simple SELECT">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ SSCORE(1),NAME FROM OLS_TUTORIAL T WHERE SCONTAINS(ID,'pixima',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="1">
+      <col id="1" name="SSCORE(1)" type="NUMERIC">1</col>
+      <col id="2" name="NAME" type="VARCHAR">Canon PIXMA MP500 All-In-One Photo Printer</col>
+    </row>
+  </resultset>
+</result>
+</test>
+
+<test name="Geo-localization sort" failure-message="Error with Geo-localization example example">
+<sql>
+  <stmt>SELECT /*+ DOMAIN_INDEX_SORT */ id,round(SSCORE(1),2) FROM OLS_TUTORIAL T where scontains(id,'video','geodist() asc&amp;fq={!geofilt}&amp;sfield=store_p&amp;pt=37.7752,-100.0232&amp;d=3000',1)>0</stmt>
+</sql>
+<result>
+  <resultset id="1">
+    <row id="2">
+      <col id="1" name="ID" type="VARCHAR">100-435805</col>
+      <col id="2" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.76</col>
+    </row>
+    <row id="3">
+      <col id="1" name="ID" type="VARCHAR">EN7800GTX/2DHTV/256M</col>
+      <col id="2" name="ROUND(SSCORE(1),2)" type="NUMERIC">0.73</col>
+    </row>
+    <row id="1">
+      <col id="1" name="ID" type="VARCHAR">MA147LL/A</col>
+      <col id="2" name="ROUND(SSCORE(1),2)" type="NUMERIC">1</col>
+    </row>
+  </resultset>
+</result>
+</test>
+<!-- Clean up   -->
+  <teardown>
+    <sql>
+      <stmt>DROP TABLE OLS_TUTORIAL</stmt>
+    </sql>
+  </teardown>
+
+</sqlunit>
+

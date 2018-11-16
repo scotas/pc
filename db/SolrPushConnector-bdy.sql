@@ -1363,7 +1363,7 @@ END;';
     IF (IS_PART = 'YES') THEN
       FOR P IN (SELECT PARTITION_NAME FROM ALL_IND_PARTITIONS  WHERE INDEX_OWNER=INDEX_SCHEMA AND INDEX_NAME=IDX_NAME) LOOP
          -- TODO: merge all facet information from each partition
-         v_f := f_info(JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T());
+         v_f := f_info(JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T());
       end loop;
     ELSE
       v_f := facet(index_schema,index_name,q,f);
@@ -1378,7 +1378,7 @@ END;';
       IF (IS_PART = 'YES') THEN
         FOR P IN (SELECT PARTITION_NAME FROM ALL_IND_PARTITIONS  WHERE INDEX_OWNER=INDEX_SCHEMA AND INDEX_NAME=IDX_NAME) LOOP
           -- TODO: merge all facet information from each partition
-          v_f := f_info(JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T());
+          v_f := f_info(JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T(),JSON_OBJECT_T());
         END LOOP;
       ELSE
         v_f := facet(index_schema,index_name,q,f);
@@ -1391,7 +1391,7 @@ END;';
                         F       VARCHAR2 /* any facet Faceting Parameters encoded using URL sintax including the prefix "facet." */) RETURN f_info is
       OBJ        JSON_OBJECT_T;
       PREFIX     VARCHAR2(255)   := OWNER||'.'||INDEX_NAME;
-      V_F        F_INFO          := F_INFO(NULL,NULL,NULL,NULL,NULL);
+      V_F        F_INFO          := F_INFO(NULL,NULL,NULL,NULL,NULL,NULL);
       REQ        UTL_HTTP.REQ;
       QRY        VARCHAR2(32767) := 'q=solridx:'||PREFIX;
       LOG_LEVEL  VARCHAR2(32)    := NVL(GETPARAMETER(PREFIX,NULL,'LogLevel'),'WARNING');
@@ -1427,6 +1427,8 @@ END;';
        --DBMS_OUTPUT.PUT_LINE('RANGES : '||V_F.RANGES.to_string);
        V_F.HMAPS := TREAT(OBJ.GET('facet_heatmaps') AS JSON_OBJECT_T);
        --DBMS_OUTPUT.PUT_LINE('HMAPS : '||V_F.HMAPS.to_string);
+       V_F.PIVOTS := TREAT(OBJ.GET('facet_pivot') AS JSON_OBJECT_T);
+       --DBMS_OUTPUT.PUT_LINE('HMAPS : '||V_F.PIVOTS.to_string);
        -- DBMS_OUTPUT.PUT_LINE('facet completed : '||(DBMS_UTILITY.GET_TIME-START_TIME));START_TIME := DBMS_UTILITY.GET_TIME;
        RETURN v_f;
   END facet;

@@ -136,13 +136,13 @@ select /*+ DOMAIN_INDEX_SORT */ sscore(1) from test_source_big where scontains(t
 select /*+ DOMAIN_INDEX_SORT */ sscore(1) from test_source_big where scontains(text,'(logLevel OR prefix) AND "LANGUAGE JAVA"',1)>0;
 
 declare
-  obj JSON_OBJECT_T;
-  li_arr   json_array_t;
+  obj      f_info;
 BEGIN
-  OBJ := SolrPushConnector.facet('SOURCE_BIG_PIDX',null,'facet.field=type_s').fields;
-  li_arr := obj.get_array('type_s');
-    dbms_output.put_line(li_arr.to_string);
+  obj := SolrPushConnector.facet('SOURCE_BIG_PIDX',null,'facet.field=type_s&facet.limit=5&facet.pivot=type_s,line_i');
+  dbms_output.put_line(obj.fields.to_string);
+  dbms_output.put_line(obj.pivots.to_string);
 END;
+/
 
 insert into test_source_big
 select owner,name,type,line,text from (select rownum as ntop_pos,q.* from
