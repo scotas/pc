@@ -64,7 +64,7 @@ public class TestQueryHits extends TestCase {
             psmt = conn.prepareStatement(
             " select /*+ "+ ((firstRowHint) ? "FIRST_ROWS" : "") +" DOMAIN_INDEX_SORT DOMAIN_INDEX_FILTER(test_source_big source_big_pidx) */ "+ 
             ((getScore) ? "pscore(1)" : "-1") +" sc,text\n" +
-            " from test_source_big where pcontains(text,?,'line_i desc',1)>0" );
+            " from test_source_big where scontains(text,?,'line_i desc',1)>0" );
             psmt.setString(1,
                            "rownum:[" + from + " TO " + (from + 9) + "] AND type_s:\"PACKAGE BODY\" AND line_i:[0 TO 3000] AND (" +
                            qry + ")");
