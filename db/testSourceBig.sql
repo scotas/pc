@@ -135,6 +135,7 @@ select sscore(1),shighlight(1) from test_source_big where scontains(text,'"proce
 select /*+ DOMAIN_INDEX_SORT */ sscore(1) from test_source_big where scontains(text,'(logLevel OR prefix) AND "LANGUAGE JAVA"',1)>0 order by sscore(1) asc;
 select /*+ DOMAIN_INDEX_SORT */ sscore(1) from test_source_big where scontains(text,'(logLevel OR prefix) AND "LANGUAGE JAVA"',1)>0;
 
+set define off serveroutput on timing on
 declare
   obj      f_info;
 BEGIN
@@ -144,16 +145,20 @@ BEGIN
 END;
 /
 
-insert into test_source_big
-select owner,name,type,line,text from (select rownum as ntop_pos,q.* from
-(select * from all_source) q)
-where ntop_pos>=20000 and ntop_pos<40000;
-
+alter index SOURCE_BIG_PIDX parameters('{CommitOnSync:false}');
+alter index SOURCE_BIG_PIDX parameters('{SyncMode:"OnLine"}');
 
 insert into test_source_big
 select owner,name,type,line,text from (select rownum as ntop_pos,q.* from
 (select * from all_source) q)
 where ntop_pos>=20000 and ntop_pos<40000;
+commit;
+
+insert into test_source_big
+select owner,name,type,line,text from (select rownum as ntop_pos,q.* from
+(select * from all_source) q)
+where ntop_pos>=40000 and ntop_pos<60000;
+commit;
 
 -- Test execution time: 00:00:05.82
 -- bad performance do not try this
@@ -193,7 +198,7 @@ select SolrPushConnector.countHits('SOURCE_BIG_PIDX','function AND line_i:[2600 
 
 -- inline pagination version using scontains "rownum:[n TO m] AND" option
 select /*+ DOMAIN_INDEX_SORT */ sscore(1) sc, text 
-from test_source_big where scontains(text,'rownum:[2000 TO 2010] AND type',1)>0 order by sscore(1) asc;
+from test_source_big where scontains(text,'rownum:[2000 TO 2009] AND type',1)>0 order by sscore(1) asc;
 
 -- countHits example
 declare 
@@ -208,11 +213,11 @@ declare
 begin
   hits := SolrPushConnector.countHits('SOURCE_BIG_PIDX','(number OR varchar2 OR date) AND line_i:[1 TO 100]');
   fromRow := round(dbms_random.value(1,hits*0.75));
-  toRow := fromRow+10;
+  toRow := fromRow+9;
   dbms_output.put_line('Count Hits: '||hits);
   dbms_output.put_line('Score list from rownum: '||fromRow||' to: '||toRow);
   for j in 1..10 loop
-    OPEN c1(fromRow+(j*10),toRow+((j+1)*10)); -- open the cursor before fetching
+    OPEN c1(fromRow+(j*10),toRow+(j*10)); -- open the cursor before fetching
     LOOP
        -- Fetches 2 columns into variables
        FETCH c1 INTO sc, text;
@@ -239,11 +244,11 @@ declare
 begin
   hits := ctx_query.count_hits(index_name => 'source_big_idx', text_query => 'function OR procedure OR package', exact => TRUE);
   fromRow := round(dbms_random.value(1,hits*0.75));
-  toRow := fromRow+10;
+  toRow := fromRow+9;
   dbms_output.put_line('Count Hits: '||hits);
   dbms_output.put_line('Score list from rownum: '||fromRow||' to: '||toRow);
   for j in 1..10 loop
-    OPEN c1(fromRow+(j*10),toRow+((j+1)*10)); -- open the cursor before fetching
+    OPEN c1(fromRow+(j*10),toRow+(j*10)); -- open the cursor before fetching
     LOOP
        -- Fetches 2 columns into variables
        FETCH c1 INTO sc, text;
