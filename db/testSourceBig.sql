@@ -32,7 +32,7 @@ $ curl -X POST -H 'Content-type:application/json' --data-binary '{
   }
 }' http://localhost:8983/solr/source_big_pidx/schema
 
-$ sed -i 's/<uniqueKey>id/<uniqueKey>rowid/g' /opt/solr/server/solr/source_big_pidx/conf/managed-schema
+$ sed -i 's/<uniqueKey>id/<uniqueKey>rowid/g' /var/solr/data/source_big_pidx/conf/managed-schema
 $ curl "http://localhost:8983/solr/admin/cores?action=RELOAD&core=source_big_pidx"
 
 -- Tutorial custom
