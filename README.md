@@ -43,3 +43,5 @@ $ docker run -ti --rm --name dev-pc-18c --hostname dev --link pc:ols \
     ols-dev:2.0.4
 ```
 where **pc** is container running an Oracle 18c XE database.
+
+# More info at [Scotas Push Connector Wiki](https://github.com/scotas/pc/wiki)
