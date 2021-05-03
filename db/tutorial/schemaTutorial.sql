@@ -14,7 +14,7 @@ CREATE TABLE OLS_TUTORIAL (
   STORE   VARCHAR2(200))
 ;
 
--- set define off
+set define off
 -- hd.xml
 insert into ols_tutorial values (
 'SP2514N',
@@ -73,7 +73,7 @@ NULL,
 
 insert into ols_tutorial values (
 'IW-02',
-'iPod &amp; iPod Mini USB 2.0 Cable',
+'iPod & iPod Mini USB 2.0 Cable',
 'Belkin',
 '["electronics", "connector"]',
 'car power adapter for iPod, white',
@@ -279,8 +279,8 @@ insert into ols_tutorial values (
 This is an e acute: é
 eaiou with circumflexes: êâîôû
 eaiou with umlauts: ëäïöü
-tag with escaped chars: &lt;nicetag/&gt ; end
-escaped ampersand: Bonnie &amp; Clyde',
+tag with escaped chars: <nicetag/> ; end
+escaped ampersand: Bonnie & Clyde',
 NULL,
 NULL,
 0,

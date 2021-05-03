@@ -511,7 +511,7 @@ vidcard.xml
 </result>
 </test>
 
-<test name="Facets dates example" failure-message="Error with Facets interval">
+<test name="Facets intervals example" failure-message="Error with Facets interval">
 <call>
   <stmt>{? = call SOLRPUSHCONNECTOR.facet('TUTORIAL_PIDX',null,'facet.interval=price_f&amp;f.price_f.facet.interval.set=[0,10]&amp;f.price_f.facet.interval.set=(10,100]').intervals.to_string}</stmt>
   <param id="1" name="fields-result" type="VARCHAR" inout="out"></param>
