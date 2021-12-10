@@ -79,7 +79,7 @@ parameters('{LogLevel:"INFO",
              ExtraCols:"''text'' value text,''title'' value substr(text,1,256),''line_i'' value line,''type_s'' value type"}');
 
 -- LucidWorks enterprise server
--- previous enable connection on 11g/12c/18c as sys SQL> exec DBMS_NETWORK_ACL_ADMIN.ASSIGN_ACL(acl => 'solr.xml', host => 'localhost', lower_port => 8888, upper_port => 8888);
+-- previous enable connection on 11g/12c/18c/21c as sys SQL> exec DBMS_NETWORK_ACL_ADMIN.ASSIGN_ACL(acl => 'solr.xml', host => 'localhost', lower_port => 8888, upper_port => 8888);
 
 alter index SOURCE_BIG_PIDX parameters('{CommitOnSync:true}');
 
@@ -192,7 +192,7 @@ select count(line) from test_source_big
 -- even faster than previous one
 select SolrPushConnector.countHits('SOURCE_BIG_PIDX','function AND line_i:[2600 TO *]') from dual;
 
--- Query equivalent using 11g/12c/18c Composite index filter by functionality
+-- Query equivalent using 11g/12c/18c/21c Composite index filter by functionality
 -- select /*+ DOMAIN_INDEX_SORT DOMAIN_INDEX_FILTER(test_source_big source_big_idx) */ count(*) from test_source_big
 -- where contains(text,'varchar2')>0 and line between 2600 and 9000;
 
@@ -263,7 +263,7 @@ end;
 
 /*
 composite domain index comparison
--- 11g/12c/18c composite index syntax
+-- 11g/12c/18c/21c composite index syntax
 -- SQL> create index source_big_idx on test_source_big(text)
 --   2  indextype is ctxsys.context
 --   3  filter by line

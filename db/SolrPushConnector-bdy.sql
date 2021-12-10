@@ -782,12 +782,11 @@ create or replace TYPE BODY SolrPushConnector IS
     idx_name VARCHAR2(30) := index_name;
     is_part varchar2(3);
     par_degree number;
-    v_version VARCHAR2(4000);
+    v_version VARCHAR2(2) := DBMS_DB_VERSION.VERSION;
   begin
-    select banner into v_version from v$version where rownum=1;
     SELECT OWNER,PARTITIONED,DEGREE INTO INDEX_SCHEMA,IS_PART,PAR_DEGREE FROM ALL_INDEXES WHERE INDEX_NAME=IDX_NAME;
-    IF (IS_PART = 'YES' AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) THEN
-      if (PAR_DEGREE > 1 AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) then
+    IF (IS_PART = 'YES' AND (to_number(v_version)>11)) THEN
+      if (PAR_DEGREE > 1 AND (to_number(v_version)>11)) then
         EXECUTE IMMEDIATE 'run_in_parallel('''||INDEX_SCHEMA||''','''||IDX_NAME||''','||PAR_DEGREE||',''SYNC_PARTITION'')';
       else
         FOR P IN (SELECT PARTITION_NAME FROM ALL_IND_PARTITIONS  WHERE INDEX_OWNER=INDEX_SCHEMA AND INDEX_NAME=IDX_NAME) LOOP
@@ -804,7 +803,7 @@ create or replace TYPE BODY SolrPushConnector IS
       INDEX_SCHEMA := SYS_CONTEXT('USERENV','CURRENT_SCHEMA');
       SELECT PARTITIONED,DEGREE INTO IS_PART,PAR_DEGREE FROM ALL_INDEXES WHERE INDEX_NAME=IDX_NAME and OWNER=INDEX_SCHEMA;
       IF (IS_PART = 'YES') THEN
-        if (PAR_DEGREE > 1 AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) then
+        if (PAR_DEGREE > 1 AND (to_number(v_version)>11)) then
           EXECUTE IMMEDIATE 'run_in_parallel('''||INDEX_SCHEMA||''','''||IDX_NAME||''','||PAR_DEGREE||',''SYNC_PARTITION'')';
         else
           FOR P IN (SELECT PARTITION_NAME FROM ALL_IND_PARTITIONS  WHERE INDEX_OWNER=INDEX_SCHEMA AND INDEX_NAME=IDX_NAME) LOOP
@@ -1077,11 +1076,10 @@ end;';
     idx_name VARCHAR2(30) := index_name;
     is_part varchar2(3);
     par_degree number;
-    v_version VARCHAR2(4000);
+    v_version VARCHAR2(2) := DBMS_DB_VERSION.VERSION;
   begin
-    select banner into v_version from v$version where rownum=1;
     SELECT OWNER,PARTITIONED,DEGREE INTO INDEX_SCHEMA,IS_PART,PAR_DEGREE FROM ALL_INDEXES WHERE INDEX_NAME=IDX_NAME;
-    IF (IS_PART = 'YES' AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) THEN
+    IF (IS_PART = 'YES' AND (to_number(v_version)>11)) THEN
       EXECUTE IMMEDIATE 'run_in_parallel('''||INDEX_SCHEMA||''','''||IDX_NAME||''','||PAR_DEGREE||',''OPTIMIZE_PARTITION'')';
     ELSE
       OPTIMIZE(INDEX_SCHEMA,INDEX_NAME);
@@ -1092,7 +1090,7 @@ end;';
     when too_many_rows then
       INDEX_SCHEMA := SYS_CONTEXT('USERENV','CURRENT_SCHEMA');
       SELECT PARTITIONED,DEGREE INTO IS_PART,PAR_DEGREE FROM ALL_INDEXES WHERE INDEX_NAME=IDX_NAME and OWNER=INDEX_SCHEMA;
-      IF (IS_PART = 'YES' AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) THEN
+      IF (IS_PART = 'YES' AND (to_number(v_version)>11)) THEN
         EXECUTE IMMEDIATE 'run_in_parallel('''||INDEX_SCHEMA||''','''||IDX_NAME||''','||PAR_DEGREE||',''OPTIMIZE_PARTITION'')';
       ELSE
         OPTIMIZE(INDEX_SCHEMA,INDEX_NAME);
@@ -1133,11 +1131,10 @@ end;';
     idx_name VARCHAR2(30) := index_name;
     is_part varchar2(3);
     par_degree number;
-    v_version VARCHAR2(4000);
+    v_version VARCHAR2(2) := DBMS_DB_VERSION.VERSION;
   begin
-    select banner into v_version from v$version where rownum=1;
     SELECT OWNER,PARTITIONED,DEGREE INTO INDEX_SCHEMA,IS_PART,PAR_DEGREE FROM ALL_INDEXES WHERE INDEX_NAME=IDX_NAME;
-    IF (IS_PART = 'YES' AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) THEN
+    IF (IS_PART = 'YES' AND (to_number(v_version)>11)) THEN
       EXECUTE IMMEDIATE 'run_in_parallel('''||INDEX_SCHEMA||''','''||IDX_NAME||''','||PAR_DEGREE||',''REBUILD_PARTITION'')';
     ELSE
       REBUILD(INDEX_SCHEMA,INDEX_NAME);
@@ -1148,7 +1145,7 @@ end;';
     when too_many_rows then
       INDEX_SCHEMA := SYS_CONTEXT('USERENV','CURRENT_SCHEMA');
       SELECT PARTITIONED,DEGREE INTO IS_PART,PAR_DEGREE FROM ALL_INDEXES WHERE INDEX_NAME=IDX_NAME and OWNER=INDEX_SCHEMA;
-      IF (IS_PART = 'YES' AND (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0  OR instr(v_version,'18c')>0)) THEN
+      IF (IS_PART = 'YES' AND (to_number(v_version)>11)) THEN
         EXECUTE IMMEDIATE 'run_in_parallel('''||INDEX_SCHEMA||''','''||IDX_NAME||''','||PAR_DEGREE||',''REBUILD_PARTITION'')';
       ELSE
         REBUILD(INDEX_SCHEMA,INDEX_NAME);
@@ -1273,10 +1270,8 @@ END;';
   END REBUILD;
 
   static procedure createTable(prefix VARCHAR2) is
-    v_version VARCHAR2(4000);
     current_schema VARCHAR2(30);
   begin
-      select banner into v_version from v$version where rownum=1;
       EXECUTE IMMEDIATE
 'create table '||PREFIX||'$T (
     PART_NAME          VARCHAR2(30),

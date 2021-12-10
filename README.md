@@ -1,5 +1,5 @@
-# Solr Push Connector for Oracle 18c
-This the source Scotas Solr Push Connector(C)  for Oracle 18c (XE/Personal/EE editions).
+# Solr Push Connector for Oracle 18c/21c
+This the source Scotas Solr Push Connector(C)  for Oracle 18c/21c (XE/Personal/EE editions).
 To install a binary distribution on Oracle 18c XE Docker image just run:
 
 ```

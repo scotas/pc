@@ -148,7 +148,7 @@ public class TestQueryHitsCtx extends TestCase {
      * Index is for 10g:
         create index source_big_idx on test_source_big(text)
         indextype is ctxsys.context;
-     * For 11g/12c/18c:
+     * For 11g/12c/18c/21c:
         create index source_big_idx on test_source_big(text)
         indextype is ctxsys.context
         filter by line

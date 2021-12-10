@@ -3,12 +3,12 @@ set serveroutput on size 1000000
 whenever SQLERROR EXIT FAILURE
 
 DECLARE
-  v_version VARCHAR2(4000);
+  v_version VARCHAR2(2) := DBMS_DB_VERSION.VERSION;
   v_code    NUMBER;
   v_errm    VARCHAR2(4000);
 BEGIN
   select banner into v_version from v$version where rownum=1;
-  if (instr(v_version,'11g')>0 OR instr(v_version,'12c')>0 OR instr(v_version,'18c')>0) then
+  if (to_number(v_version)>11) then
     begin
       begin
         execute immediate 'begin DBMS_NETWORK_ACL_ADMIN.CREATE_ACL(acl => ''solr.xml'', description => ''WWW solr ACL'', principal => ''PC'', is_grant => true, privilege => ''connect''); COMMIT; end;';
